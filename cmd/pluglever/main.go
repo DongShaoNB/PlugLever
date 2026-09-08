@@ -20,7 +20,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-const version = "1.0.0"
+var version = "1.0.0"
 
 func printUsage() {
 	fmt.Printf("PlugLever v%s - 专为 Minecraft 服主打造的插件开关管理 TUI 工具\n\n", version)

@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build Binary
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: windows
+            goarch: amd64
+            ext: .exe
+          - goos: windows
+            goarch: arm64
+            ext: .exe
+          - goos: linux
+            goarch: amd64
+            ext: ""
+          - goos: linux
+            goarch: arm64
+            ext: ""
+          - goos: darwin
+            goarch: amd64
+            ext: ""
+          - goos: darwin
+            goarch: arm64
+            ext: ""
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+          cache: true
+
+      - name: Vet Code
+        run: go vet ./...
+
+      - name: Build Binary and Archive
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: 0
+        run: |
+          mkdir -p dist
+          TAG_NAME="${GITHUB_REF#refs/tags/}"
+          RAW_NAME="PlugLever-${TAG_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}${{ matrix.ext }}"
+          
+          go build -ldflags="-s -w -X 'main.version=${TAG_NAME#v}'" -o "dist/${RAW_NAME}" ./cmd/pluglever/main.go
+          
+          cd dist
+          if [ "${{ matrix.goos }}" = "windows" ]; then
+            zip "PlugLever-${TAG_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}.zip" "${RAW_NAME}"
+          else
+            tar -czvf "PlugLever-${TAG_NAME}-${{ matrix.goos }}-${{ matrix.goarch }}.tar.gz" "${RAW_NAME}"
+          fi
+          cd ..
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: assets-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: dist/*
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: assets-*
+          path: release-assets
+          merge-multiple: true
+
+      - name: Generate Checksums
+        run: |
+          cd release-assets
+          sha256sum PlugLever-* > sha256sums.txt
+          cat sha256sums.txt
+          cd ..
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
