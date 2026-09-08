@@ -25,6 +25,9 @@ jobs:
           go-version: 'stable'
           cache: true
 
+      - name: Vet Code
+        run: go vet ./...
+
       - name: Build Binary
         env:
           GOOS: ${{ matrix.goos }}

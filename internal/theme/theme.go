@@ -140,9 +140,24 @@ func BorderStyle(t Theme) lipgloss.Style {
 		Foreground(lipgloss.Color(t.Border))
 }
 
+// SearchHighlightStyle 搜索高亮与高警示文字样式
+func SearchHighlightStyle(t Theme) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.SearchHighlight)).
+		Bold(true)
+}
+
+// WarningStyle 警告消息样式（黄色/高亮 + 粗体）
+func WarningStyle(t Theme) lipgloss.Style {
+	return lipgloss.NewStyle().
+		Foreground(lipgloss.Color(t.SearchHighlight)).
+		Bold(true)
+}
+
 // CursorLineStyle 光标所在行的高亮背景样式
 func CursorLineStyle(t Theme, width int) lipgloss.Style {
 	return lipgloss.NewStyle().
 		Background(lipgloss.Color(t.CursorColor)).
 		Width(width)
 }
+
